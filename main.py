@@ -13,6 +13,8 @@ character_jump_sheet = load_image('character1_jump.png')
 character_divekick = load_image('character1_divekick.png')
 # --- 새로 추가: 걷기 스프라이트 시트 ---
 character_walk_sheet = load_image('character1_walk.png')  # 6프레임 걷기 시트
+# --- 새로 추가: 상대 캐릭터 ---
+character2 = load_image('character_2.png')  # 반대편에서 마주볼 캐릭터
 
 # --- 컬러 키 설정 (필요하다면) ---
 # character_walk_sheet.colorkey_delta((255, 0, 255), 10)
@@ -50,10 +52,23 @@ half_w = base_draw_w // 2
 half_h = base_draw_h // 2
 
 # 초기 위치
-x = 400
+x = half_w  # main 캐릭터 시작: 왼쪽 끝에 배치
 ORIGINAL_GROUND = 90
 GROUND_Y = ORIGINAL_GROUND + (base_draw_h // 2)
 y = GROUND_Y
+
+# --- 다른 캐릭터 시작 위치: 오른쪽 끝에 고정 ---
+other_char_x = CANVAS_W - half_w
+other_char_y = GROUND_Y
+
+# --- character2 상태 변수 (이동/점프) ---
+x2 = other_char_x
+y2 = other_char_y
+move_left2 = False
+move_right2 = False
+current_direction2 = -1  # 오른쪽 끝에 있으니 왼쪽을 바라보게 기본값 -1
+is_jumping2 = False
+jump_velocity2 = 0.0
 
 # 이동 속도 (픽셀/초)
 SPEED = 200
@@ -95,29 +110,43 @@ while running:
         elif e.type == SDL_KEYDOWN:
             if e.key == SDLK_ESCAPE:
                 running = False
-            elif e.key == SDLK_LEFT or e.key == SDLK_a:
+            # --- character_1 조작: WASD ---
+            elif e.key == SDLK_a:
                 move_left = True
-                current_direction = -1  # 왼쪽으로 이동 시작, 방향 왼쪽
-            elif e.key == SDLK_RIGHT or e.key == SDLK_d:
+                current_direction = -1
+            elif e.key == SDLK_d:
                 move_right = True
-                current_direction = 1  # 오른쪽으로 이동 시작, 방향 오른쪽
-            elif (e.key == SDLK_UP) or (e.key == SDLK_SPACE):
+                current_direction = 1
+            elif e.key == SDLK_w or e.key == SDLK_SPACE:
                 if not is_jumping:
                     is_jumping = True
-                    is_walking = False  # 점프하면 걷기 멈춤
+                    is_walking = False
                     jump_velocity = JUMP_SPEED
-            elif e.key == SDLK_DOWN:
-                if is_jumping and not is_dive_kicking:
-                    is_dive_kicking = True
+            # --- character_2 조작: 화살표 ---
+            elif e.key == SDLK_LEFT:
+                move_left2 = True
+                current_direction2 = -1
+            elif e.key == SDLK_RIGHT:
+                move_right2 = True
+                current_direction2 = 1
+            elif e.key == SDLK_UP:
+                if not is_jumping2:
+                    is_jumping2 = True
+                    jump_velocity2 = JUMP_SPEED
 
         elif e.type == SDL_KEYUP:
-            if e.key == SDLK_LEFT or e.key == SDLK_a:
+            # character_1 키 해제
+            if e.key == SDLK_a:
                 move_left = False
-            elif e.key == SDLK_RIGHT or e.key == SDLK_d:
+            elif e.key == SDLK_d:
                 move_right = False
-            # 키를 떼면 걷기 상태를 결정 (아무 방향키도 안 눌려져 있으면 걷기 멈춤)
             if not move_left and not move_right:
                 is_walking = False
+            # character_2 키 해제
+            if e.key == SDLK_LEFT:
+                move_left2 = False
+            elif e.key == SDLK_RIGHT:
+                move_right2 = False
 
     # --- 수평 위치 업데이트 (수정됨) ---
     dx = 0
@@ -128,11 +157,19 @@ while running:
         dx += SPEED * dt
         is_walking = True
 
+    # character2 수평 이동
+    dx2 = 0
+    if move_left2:
+        dx2 -= SPEED * dt
+    if move_right2:
+        dx2 += SPEED * dt
+
     # 두 키 모두 눌려있지 않으면 걷기 아님 (점프 중이 아닐 때만)
     if not (move_left or move_right) and not is_jumping:
         is_walking = False
 
     x += dx
+    x2 += dx2
 
     # --- 점프 물리 업데이트 (기존과 동일) ---
     if is_jumping:
@@ -150,10 +187,22 @@ while running:
             is_walking = False  # 착지하면 걷기 멈춤
             jump_velocity = 0.0
 
+    # character2 점프 물리
+    if is_jumping2:
+        y2 += jump_velocity2 * dt
+        jump_velocity2 -= GRAVITY * dt
+        if y2 <= GROUND_Y:
+            y2 = GROUND_Y
+            is_jumping2 = False
+            jump_velocity2 = 0.0
+
     # 캔버스 경계 내로 제한 (기존과 동일)
     if x < half_w: x = half_w
     if x > CANVAS_W - half_w: x = CANVAS_W - half_w
+    if x2 < half_w: x2 = half_w
+    if x2 > CANVAS_W - half_w: x2 = CANVAS_W - half_w
     if y > CANVAS_H - (base_draw_h // 2): y = CANVAS_H - (base_draw_h // 2)
+    if y2 > CANVAS_H - (base_draw_h // 2): y2 = CANVAS_H - (base_draw_h // 2)
 
     # --- 걷기 애니메이션 프레임 업데이트 (새로 추가) ---
     if is_walking:
@@ -242,6 +291,17 @@ while running:
             current_sheet.composite_draw(0, 'h', draw_x, draw_y, draw_w, draw_h)
         else:
             current_sheet.draw(draw_x, draw_y, draw_w, draw_h)
+
+    # --- 새로 추가: 반대편의 character_2를 오른쪽 끝 고정 위치에 그리기 ---
+    other_x = int(x2)
+    other_y = int(y2)
+    other_w = base_draw_w
+    other_h = base_draw_h
+    # character2는 자신의 방향(current_direction2)으로 그리기
+    if current_direction2 == -1:
+        character2.composite_draw(0, 'h', other_x, other_y, other_w, other_h)
+    else:
+        character2.draw(other_x, other_y, other_w, other_h)
 
     update_canvas()
     # --- 렌더링 끝 ---
