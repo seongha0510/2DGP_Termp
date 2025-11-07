@@ -1,5 +1,4 @@
 from pico2d import *
-import sys
 import time
 
 open_canvas(800, 600)
@@ -24,9 +23,12 @@ JUMP_FRAME_CROUCH = (0, 0, 70, 130)
 JUMP_FRAME_RISE = (70, 0, 70, 130)
 JUMP_FRAME_FALL = (140, 0, 70, 130)
 
+# --- 새로 추가: 걷기 프레임 좌우 패딩 (프레임 경계 겹침 방지) ---
+WALK_CLIP_PADDING = 1
+
 # --- 새로 추가: 걷기 프레임 좌표 정의 (66x130 기준) ---
 # (left, bottom, width, height)
-WALK_FRAME_WIDTH = 66
+WALK_FRAME_WIDTH = 64
 WALK_FRAME_HEIGHT = 130
 WALK_FRAMES = [
     (0 * WALK_FRAME_WIDTH, 0, WALK_FRAME_WIDTH, WALK_FRAME_HEIGHT),  # 1번째 프레임
@@ -71,7 +73,7 @@ GRAVITY = 1500.0
 
 # 다이브킥 관련
 is_dive_kicking = False
-DIVEKICK_SPEED = 900.0
+DIVEKICK_SPEED = 700.0
 
 # --- 새로 추가: 걷기 관련 ---
 is_walking = False  # 현재 걷고 있는지 여부
@@ -180,9 +182,15 @@ while running:
             current_sprite_h = frame_info[3]
     elif is_walking:
         current_sheet = character_walk_sheet
-        frame_info = WALK_FRAMES[int(walk_frame)]
-        current_sprite_w = frame_info[2]  # 걷기 프레임의 폭 (66)
-        current_sprite_h = frame_info[3]  # 걷기 프레임의 높이 (130)
+        # 원본 프레임에서 좌우 패딩만큼 내부로 잘라서 사용
+        raw_frame = WALK_FRAMES[int(walk_frame)]  # (left, bottom, width, height)
+        clip_x = raw_frame[0] + WALK_CLIP_PADDING
+        clip_y = raw_frame[1]
+        clip_w = max(1, raw_frame[2] - 2 * WALK_CLIP_PADDING)  # 좌우 각각 패딩 제거
+        clip_h = raw_frame[3]
+        frame_info = (clip_x, clip_y, clip_w, clip_h)
+        current_sprite_w = clip_w  # 잘라낸 폭 사용
+        current_sprite_h = clip_h  # 프레임 높이
     else:  # 땅에 있고 걷지 않을 때
         current_sheet = character_stand  # 단일 이미지
         current_sprite_w = base_sprite_w  # 서있기 이미지의 원본 폭 (70)
@@ -199,11 +207,17 @@ while running:
     # draw_2x(), clip_draw_2x()는 pico2d에 없으므로 clip_composite_draw / composite_draw 사용
 
     if frame_info:  # 시트에서 자르는 경우 (점프, 걷기)
-        if current_sheet == character_jump_sheet:  # 점프는 좌우반전 없이 그대로
-            current_sheet.clip_draw(
-                frame_info[0], frame_info[1], frame_info[2], frame_info[3],
-                draw_x, draw_y, draw_w, draw_h
-            )
+        if current_sheet == character_jump_sheet:  # 점프는 방향에 따라 반전 처리
+            if current_direction == -1:
+                current_sheet.clip_composite_draw(
+                    frame_info[0], frame_info[1], frame_info[2], frame_info[3],
+                    0, 'h', draw_x, draw_y, draw_w, draw_h
+                )
+            else:
+                current_sheet.clip_draw(
+                    frame_info[0], frame_info[1], frame_info[2], frame_info[3],
+                    draw_x, draw_y, draw_w, draw_h
+                )
         else:  # 걷기 (current_sheet == character_walk_sheet)
             # 걷기는 좌우 방향에 따라 반전 처리 (clip_composite_draw 사용)
             if current_direction == -1:
