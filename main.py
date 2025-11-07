@@ -1,47 +1,104 @@
 from pico2d import *
+import sys
+import time
 
 open_canvas(800, 600)
-
-andy_sheet = load_image('Andy.png')
-background = load_image('Stage.png')
-
-sprite_left = 5
-sprite_bottom = 3307
-sprite_width = 75
-sprite_height = 115
 
 # 캔버스 크기 상수
 CANVAS_W, CANVAS_H = 800, 600
 
+background = load_image('Stage.png')
+character = load_image('character1.png')
+
+# 스프라이트 크기
+sprite_w = character.w if hasattr(character, 'w') else character.get_width()
+sprite_h = character.h if hasattr(character, 'h') else character.get_height()
+half_w = sprite_w // 2
+half_h = sprite_h // 2
+
+# 초기 위치
+x = 400   # 중앙
+# y는 스프라이트가 서있는 바닥 Y좌표(중심 기준)
+GROUND_Y = 90
+y = GROUND_Y
+
+# 이동 속도 (픽셀/초)
+SPEED = 200
+
+# 키 상태 추적(좌우만)
+move_left = False
+move_right = False
+
+# 점프 관련
+is_jumping = False
+jump_velocity = 0.0
+JUMP_SPEED = 500.0   # 점프 초기 속도(픽셀/초)
+GRAVITY = 1500.0     # 중력 가속도(픽셀/초^2)
+
+last_time = time.time()
+
 running = True
 while running:
-    for event in get_events():
-        if event.type == SDL_QUIT:
-            running = False
-        elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
-            running = False
+    now = time.time()
+    dt = now - last_time
+    last_time = now
 
+    # 입력 처리
+    events = get_events()
+    for e in events:
+        if e.type == SDL_QUIT:
+            running = False
+        elif e.type == SDL_KEYDOWN:
+            if e.key == SDLK_ESCAPE:
+                running = False
+            elif e.key == SDLK_LEFT or e.key == SDLK_a:
+                move_left = True
+            elif e.key == SDLK_RIGHT or e.key == SDLK_d:
+                move_right = True
+            elif (e.key == SDLK_UP) or (e.key == SDLK_SPACE):
+                # 점프 시작 (이미 점프 중이면 무시)
+                if not is_jumping:
+                    is_jumping = True
+                    jump_velocity = JUMP_SPEED
+        elif e.type == SDL_KEYUP:
+            if e.key == SDLK_LEFT or e.key == SDLK_a:
+                move_left = False
+            elif e.key == SDLK_RIGHT or e.key == SDLK_d:
+                move_right = False
+
+    # 수평 위치 업데이트 (시간 기반)
+    dx = 0
+    if move_left:
+        dx -= SPEED * dt
+    if move_right:
+        dx += SPEED * dt
+
+    x += dx
+
+    # 점프 물리 업데이트
+    if is_jumping:
+        y += jump_velocity * dt
+        jump_velocity -= GRAVITY * dt
+        # 착지 체크
+        if y <= GROUND_Y:
+            y = GROUND_Y
+            is_jumping = False
+            jump_velocity = 0.0
+
+    # 캔버스 경계 내로 제한 (수평은 스프라이트 반폭, 수직은 바닥~상단)
+    if x < half_w:
+        x = half_w
+    if x > CANVAS_W - half_w:
+        x = CANVAS_W - half_w
+    if y > CANVAS_H - half_h:
+        y = CANVAS_H - half_h
+
+    # 렌더링
     clear_canvas()
-
-    # 배경 이미지를 캔버스에 맞게 비율을 유지하면서 채웁니다(가운데 정렬, 잘림 발생 가능).
-    try:
-        bg_w = background.w
-        bg_h = background.h
-    except Exception:
-        try:
-            bg_w = background.get_width()
-            bg_h = background.get_height()
-        except Exception:
-            bg_w, bg_h = CANVAS_W, CANVAS_H
-
-    scale = max(CANVAS_W / bg_w, CANVAS_H / bg_h)
-    draw_w = int(bg_w * scale)
-    draw_h = int(bg_h * scale)
-    # 중앙(400,300)에 스케일된 크기로 그리면 캔버스를 완전히 덮습니다.
-    background.draw(CANVAS_W // 2, CANVAS_H // 2, draw_w, draw_h)
-
-    andy_sheet.clip_draw(sprite_left, sprite_bottom, sprite_width, sprite_height, CANVAS_W // 2, CANVAS_H // 2)
+    background.draw(CANVAS_W // 2, CANVAS_H // 2, CANVAS_W, CANVAS_H)
+    character.draw(int(x), int(y))
     update_canvas()
-    delay(1/60)
+
+    delay(0.01)
 
 close_canvas()
