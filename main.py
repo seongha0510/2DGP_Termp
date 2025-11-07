@@ -55,11 +55,16 @@ half_h = base_draw_h // 2
 x = half_w  # main 캐릭터 시작: 왼쪽 끝에 배치
 ORIGINAL_GROUND = 90
 GROUND_Y = ORIGINAL_GROUND + (base_draw_h // 2)
-y = GROUND_Y
+# main 캐릭터 및 character2의 실제 착지 높이(화면에 더 낮게 보이도록 오프셋 적용)
+GROUND_Y_OFFSET = 20  # 내려보일 픽셀 수, 필요하면 조정
+CHARACTER_GROUND_Y = GROUND_Y - GROUND_Y_OFFSET
+# main 캐릭터 시작 Y
+y = CHARACTER_GROUND_Y
 
 # --- 다른 캐릭터 시작 위치: 오른쪽 끝에 고정 ---
 other_char_x = CANVAS_W - half_w
-other_char_y = GROUND_Y
+# 다른 캐릭터를 main과 동일한 높이로 설정
+other_char_y = CHARACTER_GROUND_Y
 
 # --- character2 상태 변수 (이동/점프) ---
 x2 = other_char_x
@@ -122,6 +127,10 @@ while running:
                     is_jumping = True
                     is_walking = False
                     jump_velocity = JUMP_SPEED
+            elif e.key == SDLK_s:
+                # main 캐릭터 다이브킥: 점프 중일 때만 발동
+                if is_jumping and not is_dive_kicking:
+                    is_dive_kicking = True
             # --- character_2 조작: 화살표 ---
             elif e.key == SDLK_LEFT:
                 move_left2 = True
@@ -180,8 +189,9 @@ while running:
             y += jump_velocity * dt
             jump_velocity -= GRAVITY * dt
 
-        if y <= GROUND_Y:
-            y = GROUND_Y
+        # 착지 시 실제 착지 높이로 복구
+        if y <= CHARACTER_GROUND_Y:
+            y = CHARACTER_GROUND_Y
             is_jumping = False
             is_dive_kicking = False
             is_walking = False  # 착지하면 걷기 멈춤
@@ -191,8 +201,8 @@ while running:
     if is_jumping2:
         y2 += jump_velocity2 * dt
         jump_velocity2 -= GRAVITY * dt
-        if y2 <= GROUND_Y:
-            y2 = GROUND_Y
+        if y2 <= CHARACTER_GROUND_Y:
+            y2 = CHARACTER_GROUND_Y
             is_jumping2 = False
             jump_velocity2 = 0.0
 
