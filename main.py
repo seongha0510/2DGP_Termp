@@ -340,19 +340,27 @@ while running:
         current_sprite_h2 = BASE_SPRITE_H_P2
 
     # P2 그릴 크기 (현재 프레임 기준 2배)
-    other_w = current_sprite_w2 * 2
-    other_h = current_sprite_h2 * 2
+    # 다이브킥일 때 살짝 크게 보이도록 확대 (예: 15% 증가)
+    if is_dive_kicking2:
+        other_w = int(current_sprite_w2 * 2 * 1.15)
+        other_h = int(current_sprite_h2 * 2 * 1.15)
+    else:
+        other_w = current_sprite_w2 * 2
+        other_h = current_sprite_h2 * 2
 
     # P2 그리기 (방향 전환)
+    # 점프 중(다이브킥 제외)일 때만 좌우 반전
+    draw_direction2 = -current_direction2 if (is_jumping2 and not is_dive_kicking2) else current_direction2
+
     if frame_info2:  # 걷기 또는 점프 (clip_draw)
-        if current_direction2 == -1:
+        if draw_direction2 == -1:
             current_sheet2.clip_composite_draw(frame_info2[0], frame_info2[1], frame_info2[2], frame_info2[3], 0, 'h',
                                                other_x, other_y, other_w, other_h)
         else:
             current_sheet2.clip_draw(frame_info2[0], frame_info2[1], frame_info2[2], frame_info2[3], other_x, other_y,
                                      other_w, other_h)
     elif current_sheet2:  # 서있기 또는 다이브킥 (draw)
-        if current_direction2 == -1:
+        if draw_direction2 == -1:
             current_sheet2.composite_draw(0, 'h', other_x, other_y, other_w, other_h)
         else:
             current_sheet2.draw(other_x, other_y, other_w, other_h)
