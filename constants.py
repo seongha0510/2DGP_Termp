@@ -1,0 +1,29 @@
+# constants.py
+
+# 캔버스 크기
+CANVAS_W, CANVAS_H = 800, 600
+
+# 물리 상수
+SPEED = 200
+JUMP_SPEED = 500.0 * (2 ** 0.5)
+GRAVITY = 1500.0
+
+# 지면 위치
+ORIGINAL_GROUND = 90
+GROUND_Y = ORIGINAL_GROUND + (130 * 2 // 2) # (130은 기본 캐릭터 높이, 2는 배율)
+GROUND_Y_OFFSET = 20
+CHARACTER_GROUND_Y = GROUND_Y - GROUND_Y_OFFSET
+
+# P1 프레임 정의
+P1_JUMP_RISE = (70, 0, 70, 130)
+P1_JUMP_FALL = (140, 0, 70, 130)
+P1_WALK_FRAMES = [(i * 64, 0, 64, 130) for i in range(6)]
+P1_WALK_FPS = 10
+P1_WALK_PADDING = 1
+
+# P2 프레임 정의
+P2_JUMP_RISE = (57, 0, 57, 150)
+P2_JUMP_FALL = (114, 0, 57, 150)
+P2_WALK_FRAMES = [(i * 66, 0, 66, 130) for i in range(8)]
+P2_WALK_FPS = 10
+P2_WALK_PADDING = 0
