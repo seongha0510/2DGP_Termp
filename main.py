@@ -1,21 +1,21 @@
 # main.py
 
-import framework  # 만들어둔 프레임워크를 불러옴
-import sys  # <--- ❗️ 1. sys 임포트 (필수)
+import framework
+import sys
 from pico2d import *
-from character import Character  # 만들어둔 캐릭터 클래스를 불러옴
-from constants import *  # 만들어둔 상수를 모두 불러옴
+from character import Character
+from constants import *
+from hp_bar import HpBar  # (이 부분은 기존과 동일)
 
 # main.py에서만 사용할 변수
 background = None
 p1 = None
 p2 = None
-running = True  # 게임 루프 실행 여부
+hp_bar = None  # --- ❗️ 1. [수정] P1, P2 HP 바 변수를 하나로 통합 ---
+running = True
 
 
-# --- ❗️ 2. 충돌 검사 함수 (새로 추가) ---
 def check_collision(a, b):
-    """a와 b의 히트박스를 가져와 충돌 여부를 True/False로 반환합니다."""
     left_a, bottom_a, right_a, top_a = a.get_hitbox()
     left_b, bottom_b, right_b, top_b = b.get_hitbox()
 
@@ -23,18 +23,17 @@ def check_collision(a, b):
     if right_a < left_b: return False
     if top_a < bottom_b: return False
     if bottom_a > top_b: return False
-    return True  # 겹침
+    return True
 
 
 # --- framework.py가 호출할 함수들 ---
 
 def enter():
-    """게임을 시작할 때 딱 한 번 실행됩니다."""
-    global background, p1, p2
+    global background, p1, p2, hp_bar  # --- ❗️ 2. [수정] global 변수 ---
 
     background = load_image('Stage.png')
 
-    # --- P1 애셋, 프레임, 키, 룰 정의 ---
+    # --- P1 애셋, 프레임, 키, 룰 정의 (기존과 동일) ---
     p1_assets = {
         'stand': load_image('character1.png'),
         'jump': load_image('character1_jump.png'),
@@ -57,7 +56,7 @@ def enter():
         'jump_flip': False
     }
 
-    # --- P2 애셋, 프레임, 키, 룰 정의 ---
+    # --- P2 애셋, 프레임, 키, 룰 정의 (기존과 동일) ---
     p2_assets = {
         'stand': load_image('character_2.png'),
         'jump': load_image('character2_jump.png'),
@@ -80,7 +79,7 @@ def enter():
         'jump_flip': True
     }
 
-    # --- 캐릭터 객체 생성 ---
+    # --- 캐릭터 객체 생성 (기존과 동일) ---
     p1 = Character(
         x=p1_assets['stand'].w * 2 // 2,
         direction=1,
@@ -98,54 +97,66 @@ def enter():
         rules=p2_rules
     )
 
+    # --- ❗️ 3. [수정] HP 바 객체 생성 ---
+    # 통합 HP 바의 크기 및 위치 (화면 중앙 상단)
+    BAR_W, BAR_H = 600, 50  # 너비를 600 정도로 크게 설정
+    BAR_Y = CANVAS_H - 40  # y 위치
+
+    # HpBar 객체를 하나만 생성
+    hp_bar = HpBar(
+        x=CANVAS_W // 2,  # 화면 x축 중앙
+        y=BAR_Y,
+        width=BAR_W,
+        height=BAR_H
+    )
+
 
 def exit():
-    """게임을 종료할 때 딱 한 번 실행됩니다."""
-    global background, p1, p2
+    global background, p1, p2, hp_bar  # --- ❗️ 4. [수정] global 변수 ---
     del background
     del p1
     del p2
+    del hp_bar  # --- ❗️ 5. [수정] 통합 HP 바 객체 삭제 ---
 
 
 def handle_event(e):
-    """키보드 입력 등을 처리합니다."""
+    # (기존과 동일)
     global running
     if e.type == SDL_QUIT:
         running = False
     elif e.type == SDL_KEYDOWN and e.key == SDLK_ESCAPE:
         running = False
     else:
-        # 각 캐릭터가 스스로 이벤트를 처리하도록 명령
         p1.handle_event(e)
         p2.handle_event(e)
 
 
 def update(dt):
-    """모든 게임 객체의 상태를 업데이트합니다."""
+    # (기존과 동일)
     p1.update(dt)
     p2.update(dt)
 
-    # --- ❗️ 3. 충돌 검사 및 데미지 처리 (새로 추가) ---
     if check_collision(p1, p2):
-        # P1이 다이브킥 중이고 P2와 부딪혔다면
         if p1.is_dive_kicking:
-            p2.take_damage(1)  # P2 데미지
-            print(f"P1 HITS! P2 HP: {p2.hp}")  # 콘솔에 HP 출력
+            p2.take_damage(1)
+            print(f"P1 HITS! P2 HP: {p2.hp}")
 
-        # P2가 다이브킥 중이고 P1과 부딪혔다면
         if p2.is_dive_kicking:
-            p1.take_damage(1)  # P1 데미지
-            print(f"P2 HITS! P1 HP: {p1.hp}")  # 콘솔에 HP 출력
+            p1.take_damage(1)
+            print(f"P2 HITS! P1 HP: {p1.hp}")
 
 
 def draw():
-    """모든 게임 객체를 화면에 그립니다."""
     clear_canvas()
     background.draw(CANVAS_W // 2, CANVAS_H // 2, CANVAS_W, CANVAS_H)
     p1.draw()
     p2.draw()
 
-    # --- ❗️ 4. (디버깅용) 히트박스 그리기 (새로 추가, 주석 처리) ---
+    # --- ❗️ 6. [수정] HP 바 그리기 ---
+    # hp_bar 객체 하나의 draw 함수에 p1과 p2의 hp를 모두 넘겨줌
+    hp_bar.draw(p1.hp, p2.hp, 100)
+
+    # (디버깅용 히트박스, 기존과 동일)
     # (l, b, r, t) = p1.get_hitbox()
     # draw_rectangle(l, b, r, t)
     # (l, b, r, t) = p2.get_hitbox()
