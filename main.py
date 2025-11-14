@@ -1,6 +1,7 @@
 # main.py
 
 import framework  # 만들어둔 프레임워크를 불러옴
+import sys  # <--- ❗️ 1. sys 임포트 (필수)
 from pico2d import *
 from character import Character  # 만들어둔 캐릭터 클래스를 불러옴
 from constants import *  # 만들어둔 상수를 모두 불러옴
@@ -10,6 +11,19 @@ background = None
 p1 = None
 p2 = None
 running = True  # 게임 루프 실행 여부
+
+
+# --- ❗️ 2. 충돌 검사 함수 (새로 추가) ---
+def check_collision(a, b):
+    """a와 b의 히트박스를 가져와 충돌 여부를 True/False로 반환합니다."""
+    left_a, bottom_a, right_a, top_a = a.get_hitbox()
+    left_b, bottom_b, right_b, top_b = b.get_hitbox()
+
+    if left_a > right_b: return False
+    if right_a < left_b: return False
+    if top_a < bottom_b: return False
+    if bottom_a > top_b: return False
+    return True  # 겹침
 
 
 # --- framework.py가 호출할 함수들 ---
@@ -111,6 +125,18 @@ def update(dt):
     p1.update(dt)
     p2.update(dt)
 
+    # --- ❗️ 3. 충돌 검사 및 데미지 처리 (새로 추가) ---
+    if check_collision(p1, p2):
+        # P1이 다이브킥 중이고 P2와 부딪혔다면
+        if p1.is_dive_kicking:
+            p2.take_damage(1)  # P2 데미지
+            print(f"P1 HITS! P2 HP: {p2.hp}")  # 콘솔에 HP 출력
+
+        # P2가 다이브킥 중이고 P1과 부딪혔다면
+        if p2.is_dive_kicking:
+            p1.take_damage(1)  # P1 데미지
+            print(f"P2 HITS! P1 HP: {p1.hp}")  # 콘솔에 HP 출력
+
 
 def draw():
     """모든 게임 객체를 화면에 그립니다."""
@@ -118,6 +144,13 @@ def draw():
     background.draw(CANVAS_W // 2, CANVAS_H // 2, CANVAS_W, CANVAS_H)
     p1.draw()
     p2.draw()
+
+    # --- ❗️ 4. (디버깅용) 히트박스 그리기 (새로 추가, 주석 처리) ---
+    # (l, b, r, t) = p1.get_hitbox()
+    # draw_rectangle(l, b, r, t)
+    # (l, b, r, t) = p2.get_hitbox()
+    # draw_rectangle(l, b, r, t)
+
     update_canvas()
 
 

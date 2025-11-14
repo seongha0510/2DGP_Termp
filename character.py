@@ -22,6 +22,9 @@ class Character:
         self.rules = rules
         self.divekick_speed = self.rules.get('dive_speed', 700.0)
 
+        # --- 새로 추가: HP 변수 (히트박스 테스트용) ---
+        self.hp = 100
+
     def handle_event(self, event):
         if event.type == SDL_KEYDOWN:
             if event.key == self.keys['left']:
@@ -89,6 +92,54 @@ class Character:
             if num_walk_frames > 0:
                 self.walk_frame = (self.walk_frame + walk_fps * dt) % num_walk_frames
 
+    # --- ❗️ 새로 추가된 함수 1: 히트박스 계산 ---
+    def get_hitbox(self):
+        current_sheet = None
+        frame_info = None
+        current_sprite_w, current_sprite_h = 0, 0
+
+        if self.is_jumping:
+            if self.is_dive_kicking:
+                current_sheet = self.assets['divekick']
+                current_sprite_w = current_sheet.w
+                current_sprite_h = current_sheet.h
+            else:
+                current_sheet = self.assets['jump']
+                if self.jump_velocity > 0:
+                    frame_info = self.frames['jump_rise']
+                else:
+                    frame_info = self.frames['jump_fall']
+                current_sprite_w = frame_info[2]
+                current_sprite_h = frame_info[3]
+        elif self.is_walking:
+            current_sheet = self.assets['walk']
+            raw_frame = self.frames['walk'][int(self.walk_frame)]
+            padding = self.rules.get('padding', 0)
+            clip_x = raw_frame[0] + padding
+            clip_w = max(1, raw_frame[2] - 2 * padding)
+            frame_info = (clip_x, raw_frame[1], clip_w, raw_frame[3])
+            current_sprite_w = clip_w
+            current_sprite_h = raw_frame[3]
+        else:
+            current_sheet = self.assets['stand']
+            current_sprite_w = current_sheet.w
+            current_sprite_h = current_sheet.h
+
+        draw_w = current_sprite_w * 2
+        draw_h = current_sprite_h * 2
+        scale = self.rules.get('dive_scale', 1.0)
+        if self.is_dive_kicking and scale != 1.0:
+            draw_w = int(draw_w * scale)
+            draw_h = int(draw_h * scale)
+
+        left = self.x - draw_w / 2
+        bottom = self.y - draw_h / 2
+        right = self.x + draw_w / 2
+        top = self.y + draw_h / 2
+
+        return (left, bottom, right, top)
+
+    # --- ❗️ 기존 draw() 함수 (내용 복구) ---
     def draw(self):
         current_sheet = None
         frame_info = None
@@ -148,3 +199,9 @@ class Character:
                 current_sheet.composite_draw(0, 'h', draw_x, draw_y, draw_w, draw_h)
             else:
                 current_sheet.draw(draw_x, draw_y, draw_w, draw_h)
+
+    # --- ❗️ 새로 추가된 함수 2: 데미지 처리 ---
+    def take_damage(self, amount):
+        self.hp -= amount
+        if self.hp < 0:
+            self.hp = 0
