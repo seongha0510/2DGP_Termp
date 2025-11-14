@@ -100,7 +100,7 @@ def enter():
     # --- ❗️ 3. [수정] HP 바 객체 생성 ---
     # 통합 HP 바의 크기 및 위치 (화면 중앙 상단)
     BAR_W, BAR_H = 600, 50  # 너비를 600 정도로 크게 설정
-    BAR_Y = CANVAS_H - 40  # y 위치
+    BAR_Y = CANVAS_H - 70  # y 위치
 
     # HpBar 객체를 하나만 생성
     hp_bar = HpBar(

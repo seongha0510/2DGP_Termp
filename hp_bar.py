@@ -31,10 +31,10 @@ class HpBar:
         # --- [수정] 끝 ---
 
         # 붉은색 막대의 높이 (새로 계산된 self.height 기준)
-        self.fill_height = self.height * 0.6
+        self.fill_height = self.height * 0.4
 
         # 붉은색 막대의 최대 너비 (self.width 기준)
-        self.max_fill_width_per_player = self.width * 0.42
+        self.max_fill_width_per_player = self.width * 0.413
 
         # 중앙 패딩 (self.width 기준)
         self.center_padding = self.width * 0.08
