@@ -184,7 +184,7 @@ def draw():
 
     # HP 바의 중심 좌표(hp_bar.x, hp_bar.y)를 기준으로 텍스트 중앙 정렬
     # (폰트 크기 30 기준, 2글자 너비 약 30px, 높이 30px 가정)
-    text_x = hp_bar.x - 21  # (30px 너비의 절반)
+    text_x = hp_bar.x - 22  # (30px 너비의 절반)
     text_y = hp_bar.y - 2  # (30px 높이의 절반)
 
     # 흰색(255, 255, 255)으로 텍스트 그리기
