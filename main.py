@@ -5,13 +5,15 @@ import sys
 from pico2d import *
 from character import Character
 from constants import *
-from hp_bar import HpBar  # (이 부분은 기존과 동일)
+from hp_bar import HpBar
 
 # main.py에서만 사용할 변수
 background = None
 p1 = None
 p2 = None
-hp_bar = None  # --- ❗️ 1. [수정] P1, P2 HP 바 변수를 하나로 통합 ---
+hp_bar = None
+font = None  # --- ❗️ [추가] 폰트 객체를 담을 변수 ---
+game_timer = 60.0  # --- ❗️ [추가] 게임 타이머 (60초) ---
 running = True
 
 
@@ -29,9 +31,17 @@ def check_collision(a, b):
 # --- framework.py가 호출할 함수들 ---
 
 def enter():
-    global background, p1, p2, hp_bar  # --- ❗️ 2. [수정] global 변수 ---
+    # --- ❗️ [수정] global 변수에 font, game_timer 추가 ---
+    global background, p1, p2, hp_bar, font, game_timer
 
     background = load_image('Stage.png')
+
+    # --- ❗️ [추가] 폰트 로드 ---
+    # (프로젝트 폴더에 'font.ttf' 파일이 있어야 합니다. 폰트 크기는 30으로 설정)
+    font = load_font('VITRO_CORE_TTF.ttf', 30)
+
+    # --- ❗️ [추가] 타이머 초기화 ---
+    game_timer = 60.0
 
     # --- P1 애셋, 프레임, 키, 룰 정의 (기존과 동일) ---
     p1_assets = {
@@ -97,8 +107,9 @@ def enter():
         rules=p2_rules
     )
 
-    # --- ❗️ 3. [수정] HP 바 객체 생성 ---
-    # 통합 HP 바의 크기 및 위치 (화면 중앙 상단)
+    # --- HP 바 객체 생성 (기존과 동일) ---
+    # (참고: main.py와 hp_bar.py의 너비(600)와 높이(50) 설정이
+    # 이전 대화(760)와 다릅니다. 업로드된 파일을 기준으로 600, 50으로 진행합니다.)
     BAR_W, BAR_H = 600, 50  # 너비를 600 정도로 크게 설정
     BAR_Y = CANVAS_H - 70  # y 위치
 
@@ -112,11 +123,13 @@ def enter():
 
 
 def exit():
-    global background, p1, p2, hp_bar  # --- ❗️ 4. [수정] global 변수 ---
+    # --- ❗️ [수정] global 변수에 font 추가 ---
+    global background, p1, p2, hp_bar, font
     del background
     del p1
     del p2
-    del hp_bar  # --- ❗️ 5. [수정] 통합 HP 바 객체 삭제 ---
+    del hp_bar
+    del font  # --- ❗️ [추가] 폰트 객체 삭제 ---
 
 
 def handle_event(e):
@@ -132,7 +145,17 @@ def handle_event(e):
 
 
 def update(dt):
-    # (기존과 동일)
+    # --- ❗️ [수정] global 변수에 game_timer 추가 ---
+    global game_timer
+
+    # --- ❗️ [추가] 타이머 업데이트 로직 ---
+    if game_timer > 0:
+        game_timer -= dt
+    else:
+        game_timer = 0
+        # (나중에 이곳에 "TIME OVER" 게임 종료 로직을 추가할 수 있습니다)
+
+    # (기존 캐릭터 업데이트 및 충돌 처리)
     p1.update(dt)
     p2.update(dt)
 
@@ -152,9 +175,21 @@ def draw():
     p1.draw()
     p2.draw()
 
-    # --- ❗️ 6. [수정] HP 바 그리기 ---
-    # hp_bar 객체 하나의 draw 함수에 p1과 p2의 hp를 모두 넘겨줌
+    # HP 바 그리기
     hp_bar.draw(p1.hp, p2.hp, 100)
+
+    # --- ❗️ [추가] 타이머 그리기 ---
+    timer_int = max(0, int(game_timer))  # 0초 이하로 내려가지 않게
+    timer_text = f"{timer_int:02d}"  # 항상 2자리로 표시 (예: 60, 09, 00)
+
+    # HP 바의 중심 좌표(hp_bar.x, hp_bar.y)를 기준으로 텍스트 중앙 정렬
+    # (폰트 크기 30 기준, 2글자 너비 약 30px, 높이 30px 가정)
+    text_x = hp_bar.x - 21  # (30px 너비의 절반)
+    text_y = hp_bar.y - 2  # (30px 높이의 절반)
+
+    # 흰색(255, 255, 255)으로 텍스트 그리기
+    font.draw(text_x, text_y, timer_text, (255, 255, 255))
+    # --- [추가] 끝 ---
 
     # (디버깅용 히트박스, 기존과 동일)
     # (l, b, r, t) = p1.get_hitbox()
