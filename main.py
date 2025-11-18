@@ -145,20 +145,21 @@ def handle_event(e):
 
 
 def update(dt):
-    # --- ❗️ [수정] global 변수에 game_timer 추가 ---
+    # global 변수
     global game_timer
 
-    # --- ❗️ [추가] 타이머 업데이트 로직 ---
+    # 1. 타이머 업데이트
     if game_timer > 0:
         game_timer -= dt
     else:
         game_timer = 0
-        # (나중에 이곳에 "TIME OVER" 게임 종료 로직을 추가할 수 있습니다)
+        # (타임오버 로직이 필요하면 여기에 추가)
 
-    # (기존 캐릭터 업데이트 및 충돌 처리)
+    # 2. 캐릭터 업데이트
     p1.update(dt)
     p2.update(dt)
 
+    # 3. 데미지 판정 (기존 로직)
     if check_collision(p1, p2):
         if p1.is_dive_kicking:
             p2.take_damage(1)
@@ -168,6 +169,35 @@ def update(dt):
             p1.take_damage(1)
             print(f"P2 HITS! P1 HP: {p1.hp}")
 
+    # --- ❗️ [추가] 충돌 시 서로 밀어내기 (통과 방지) ---
+    # 데미지 판정 후에도 여전히 겹쳐 있다면, 위치를 강제로 조정합니다.
+    if check_collision(p1, p2):
+        # 각 캐릭터의 히트박스 가져오기
+        l1, b1, r1, t1 = p1.get_hitbox()
+        l2, b2, r2, t2 = p2.get_hitbox()
+
+        # 겹친 가로 길이(overlap_x) 계산
+        # (두 박스 사이의 교차 영역 너비를 구합니다)
+        overlap_x = min(r1, r2) - max(l1, l2)
+
+        if overlap_x > 0:
+            # 겹친 만큼을 반으로 나눠서 서로 반대쪽으로 밀어냄
+            push_amount = overlap_x / 2
+
+            # P1이 P2보다 왼쪽에 있으면 -> P1은 왼쪽, P2는 오른쪽으로 밈
+            if p1.x < p2.x:
+                p1.x -= push_amount
+                p2.x += push_amount
+            # P1이 P2보다 오른쪽에 있으면 -> P1은 오른쪽, P2는 왼쪽으로 밈
+            else:
+                p1.x += push_amount
+                p2.x -= push_amount
+
+            # (선택 사항) 밀려난 후 화면 밖으로 나가지 않게 막기
+            # P1 화면 제한
+            p1.x = max(0, min(CANVAS_W, p1.x))
+            # P2 화면 제한
+            p2.x = max(0, min(CANVAS_W, p2.x))
 
 def draw():
     clear_canvas()
