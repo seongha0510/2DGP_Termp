@@ -1,44 +1,57 @@
-# framework.py
+# framework.py (수정된 버전 - open_canvas 추가)
 
 from pico2d import *
 import time
 
-# dt 계산을 위한 시간 변수
-_last_time = 0.0
-_frame_time = 0.0
+running = True
+stack = None
 
 
-def run(main_state):
-    global _last_time, _frame_time
+def change_state(state_module):
+    global stack
+    if len(stack) > 0:
+        stack[-1].exit()
+        stack.pop()
+    stack.append(state_module)
+    state_module.enter()
 
-    # 1. 초기화
-    open_canvas(main_state.CANVAS_W, main_state.CANVAS_H)
-    main_state.enter()
 
-    _last_time = time.time()
+def quit():
+    global running
+    running = False
 
-    # 2. 메인 루프
-    while main_state.running:
-        # 2-1. 시간 계산 (dt)
-        now = time.time()
-        _frame_time = now - _last_time
-        _last_time = now
 
-        # 2-2. 입력 처리
+def run(start_state_module):
+    global running, stack
+
+    # ❗️ [수정] 게임 시작 전에 반드시 캔버스(창)를 먼저 열어야 합니다!
+    open_canvas(800, 600)  # 너비 800, 높이 600으로 창 열기
+
+    running = True
+    stack = [start_state_module]
+    start_state_module.enter()
+
+    current_time = time.time()
+
+    while running:
+        new_time = time.time()
+        frame_time = new_time - current_time
+        current_time = new_time
+
         events = get_events()
         for e in events:
-            main_state.handle_event(e)
+            stack[-1].handle_event(e)
 
-        # 2-3. 상태 업데이트
-        main_state.update(_frame_time)
+        stack[-1].update(frame_time)
 
-        # 2-4. 그리기
         clear_canvas()
-        main_state.draw()
+        stack[-1].draw()
         update_canvas()
 
-        delay(0.01)  # CPU 부담 감소
+        delay(0.01)
 
-    # 3. 종료
-    main_state.exit()
+    while len(stack) > 0:
+        stack[-1].exit()
+        stack.pop()
+
     close_canvas()
