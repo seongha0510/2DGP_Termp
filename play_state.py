@@ -136,9 +136,9 @@ def handle_event(e):
     # (기존과 동일)
     global running
     if e.type == SDL_QUIT:
-        running = False
+        framework.quit()
     elif e.type == SDL_KEYDOWN and e.key == SDLK_ESCAPE:
-        running = False
+        framework.quit()
     else:
         p1.handle_event(e)
         p2.handle_event(e)
