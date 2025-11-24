@@ -173,7 +173,7 @@ def update(dt):
         hit_y = (p1.y + p2.y) / 2
 
         if p1.is_dive_kicking:
-            p2.take_damage(1)
+            p2.take_damage(4)
             collision_happened = True
             print(f"P1 HITS! P2 HP: {p2.hp}")
 
