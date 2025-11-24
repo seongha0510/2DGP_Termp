@@ -6,15 +6,17 @@ from pico2d import *
 from character import Character
 from constants import *
 from hp_bar import HpBar
+from effect import Explosion  # 이펙트 클래스
 
-# main.py에서만 사용할 변수
+# play_state에서 사용할 변수들
 background = None
 p1 = None
 p2 = None
 hp_bar = None
-font = None  # --- ❗️ [추가] 폰트 객체를 담을 변수 ---
-game_timer = 60.0  # --- ❗️ [추가] 게임 타이머 (60초) ---
+font = None
+game_timer = 60.0
 running = True
+effects = []  # 이펙트 리스트
 
 
 def check_collision(a, b):
@@ -31,19 +33,18 @@ def check_collision(a, b):
 # --- framework.py가 호출할 함수들 ---
 
 def enter():
-    # --- ❗️ [수정] global 변수에 font, game_timer 추가 ---
-    global background, p1, p2, hp_bar, font, game_timer
+    global background, p1, p2, hp_bar, font, game_timer, effects
 
     background = load_image('Stage.png')
 
-    # --- ❗️ [추가] 폰트 로드 ---
-    # (프로젝트 폴더에 'font.ttf' 파일이 있어야 합니다. 폰트 크기는 30으로 설정)
+    # 폰트 로드
     font = load_font('VITRO_CORE_TTF.ttf', 30)
 
-    # --- ❗️ [추가] 타이머 초기화 ---
+    # 타이머 및 이펙트 리스트 초기화
     game_timer = 60.0
+    effects = []
 
-    # --- P1 애셋, 프레임, 키, 룰 정의 (기존과 동일) ---
+    # --- P1 설정 ---
     p1_assets = {
         'stand': load_image('character1.png'),
         'jump': load_image('character1_jump.png'),
@@ -66,7 +67,7 @@ def enter():
         'jump_flip': False
     }
 
-    # --- P2 애셋, 프레임, 키, 룰 정의 (기존과 동일) ---
+    # --- P2 설정 ---
     p2_assets = {
         'stand': load_image('character_2.png'),
         'jump': load_image('character2_jump.png'),
@@ -89,7 +90,7 @@ def enter():
         'jump_flip': True
     }
 
-    # --- 캐릭터 객체 생성 (기존과 동일) ---
+    # 캐릭터 객체 생성
     p1 = Character(
         x=p1_assets['stand'].w * 2 // 2,
         direction=1,
@@ -107,15 +108,11 @@ def enter():
         rules=p2_rules
     )
 
-    # --- HP 바 객체 생성 (기존과 동일) ---
-    # (참고: main.py와 hp_bar.py의 너비(600)와 높이(50) 설정이
-    # 이전 대화(760)와 다릅니다. 업로드된 파일을 기준으로 600, 50으로 진행합니다.)
-    BAR_W, BAR_H = 600, 50  # 너비를 600 정도로 크게 설정
-    BAR_Y = CANVAS_H - 70  # y 위치
-
-    # HpBar 객체를 하나만 생성
+    # HP 바 생성
+    BAR_W, BAR_H = 600, 50
+    BAR_Y = CANVAS_H - 70
     hp_bar = HpBar(
-        x=CANVAS_W // 2,  # 화면 x축 중앙
+        x=CANVAS_W // 2,
         y=BAR_Y,
         width=BAR_W,
         height=BAR_H
@@ -123,18 +120,16 @@ def enter():
 
 
 def exit():
-    # --- ❗️ [수정] global 변수에 font 추가 ---
-    global background, p1, p2, hp_bar, font
+    global background, p1, p2, hp_bar, font, effects
     del background
     del p1
     del p2
     del hp_bar
-    del font  # --- ❗️ [추가] 폰트 객체 삭제 ---
+    del font
+    del effects
 
 
 def handle_event(e):
-    # (기존과 동일)
-    global running
     if e.type == SDL_QUIT:
         framework.quit()
     elif e.type == SDL_KEYDOWN and e.key == SDLK_ESCAPE:
@@ -145,91 +140,96 @@ def handle_event(e):
 
 
 def update(dt):
-    # global 변수
-    global game_timer
+    global game_timer, effects
 
-    # 1. 타이머 업데이트
+    # 타이머 업데이트
     if game_timer > 0:
         game_timer -= dt
     else:
         game_timer = 0
-        # (타임오버 로직이 필요하면 여기에 추가)
 
-    # 2. 캐릭터 업데이트
+    # 캐릭터 업데이트
     p1.update(dt)
     p2.update(dt)
 
-    # 3. 데미지 판정 (기존 로직)
+    # 이펙트 업데이트 및 완료된 이펙트 제거
+    for effect in effects:
+        effect.update(dt)
+    effects = [e for e in effects if not e.finished]
+
+    # --- 충돌 판정 (데미지 & 이펙트) ---
     if check_collision(p1, p2):
+        collision_happened = False
+
+        # 충돌 위치 계산 (두 캐릭터의 중간)
+        hit_x = (p1.x + p2.x) / 2
+        hit_y = (p1.y + p2.y) / 2
+
         if p1.is_dive_kicking:
             p2.take_damage(1)
+            collision_happened = True
             print(f"P1 HITS! P2 HP: {p2.hp}")
 
         if p2.is_dive_kicking:
             p1.take_damage(1)
+            collision_happened = True
             print(f"P2 HITS! P1 HP: {p1.hp}")
 
-    # --- ❗️ [추가] 충돌 시 서로 밀어내기 (통과 방지) ---
-    # 데미지 판정 후에도 여전히 겹쳐 있다면, 위치를 강제로 조정합니다.
+        # 충돌 시 이펙트 생성
+        if collision_happened:
+            new_effect = Explosion(hit_x, hit_y)
+            effects.append(new_effect)
+
+    # --- 충돌 판정 (밀어내기) ---
     if check_collision(p1, p2):
-        # 각 캐릭터의 히트박스 가져오기
         l1, b1, r1, t1 = p1.get_hitbox()
         l2, b2, r2, t2 = p2.get_hitbox()
 
-        # 겹친 가로 길이(overlap_x) 계산
-        # (두 박스 사이의 교차 영역 너비를 구합니다)
         overlap_x = min(r1, r2) - max(l1, l2)
 
         if overlap_x > 0:
-            # 겹친 만큼을 반으로 나눠서 서로 반대쪽으로 밀어냄
             push_amount = overlap_x / 2
 
-            # P1이 P2보다 왼쪽에 있으면 -> P1은 왼쪽, P2는 오른쪽으로 밈
             if p1.x < p2.x:
                 p1.x -= push_amount
                 p2.x += push_amount
-            # P1이 P2보다 오른쪽에 있으면 -> P1은 오른쪽, P2는 왼쪽으로 밈
             else:
                 p1.x += push_amount
                 p2.x -= push_amount
 
-            # (선택 사항) 밀려난 후 화면 밖으로 나가지 않게 막기
-            # P1 화면 제한
             p1.x = max(0, min(CANVAS_W, p1.x))
-            # P2 화면 제한
             p2.x = max(0, min(CANVAS_W, p2.x))
+
 
 def draw():
     clear_canvas()
+
+    # 1. 배경
     background.draw(CANVAS_W // 2, CANVAS_H // 2, CANVAS_W, CANVAS_H)
+
+    # 2. 캐릭터
     p1.draw()
     p2.draw()
 
-    # HP 바 그리기
+    # 3. 이펙트 (캐릭터 위에 그림)
+    for effect in effects:
+        effect.draw()
+
+    # 4. HP 바
     hp_bar.draw(p1.hp, p2.hp, 100)
 
-    # --- ❗️ [추가] 타이머 그리기 ---
-    timer_int = max(0, int(game_timer))  # 0초 이하로 내려가지 않게
-    timer_text = f"{timer_int:02d}"  # 항상 2자리로 표시 (예: 60, 09, 00)
+    # 5. 타이머 텍스트
+    timer_int = max(0, int(game_timer))
+    timer_text = f"{timer_int:02d}"
 
-    # HP 바의 중심 좌표(hp_bar.x, hp_bar.y)를 기준으로 텍스트 중앙 정렬
-    # (폰트 크기 30 기준, 2글자 너비 약 30px, 높이 30px 가정)
-    text_x = hp_bar.x - 21  # (30px 너비의 절반)
-    text_y = hp_bar.y - 2  # (30px 높이의 절반)
-
-    # 흰색(255, 255, 255)으로 텍스트 그리기
+    text_x = hp_bar.x - 21
+    text_y = hp_bar.y - 2
     font.draw(text_x, text_y, timer_text, (255, 255, 255))
-    # --- [추가] 끝 ---
 
-    # (디버깅용 히트박스, 기존과 동일)
-    (l, b, r, t) = p1.get_hitbox()
-    draw_rectangle(l, b, r, t)
-    (l, b, r, t) = p2.get_hitbox()
-    draw_rectangle(l, b, r, t)
+    # 6. 디버그용 히트박스 (필요하면 주석 해제)
+    # (l, b, r, t) = p1.get_hitbox()
+    # draw_rectangle(l, b, r, t)
+    # (l, b, r, t) = p2.get_hitbox()
+    # draw_rectangle(l, b, r, t)
 
     update_canvas()
-
-
-# --- 이 파일이 메인 파일로 실행될 때 ---
-#if __name__ == '__main__':
-    #framework.run(sys.modules[__name__])
