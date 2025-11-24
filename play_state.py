@@ -17,6 +17,7 @@ font = None
 game_timer = 60.0
 running = True
 effects = []  # 이펙트 리스트
+collision_cooldown = 0.0  # ❗️ [추가] 타격 쿨타임 변수
 
 
 def check_collision(a, b):
@@ -33,16 +34,17 @@ def check_collision(a, b):
 # --- framework.py가 호출할 함수들 ---
 
 def enter():
-    global background, p1, p2, hp_bar, font, game_timer, effects
+    global background, p1, p2, hp_bar, font, game_timer, effects, collision_cooldown
 
     background = load_image('Stage.png')
 
     # 폰트 로드
     font = load_font('VITRO_CORE_TTF.ttf', 30)
 
-    # 타이머 및 이펙트 리스트 초기화
+    # 타이머, 이펙트 리스트, 쿨타임 초기화
     game_timer = 60.0
     effects = []
+    collision_cooldown = 0.0  # ❗️ 초기화
 
     # --- P1 설정 ---
     p1_assets = {
@@ -140,13 +142,17 @@ def handle_event(e):
 
 
 def update(dt):
-    global game_timer, effects
+    global game_timer, effects, collision_cooldown
 
     # 타이머 업데이트
     if game_timer > 0:
         game_timer -= dt
     else:
         game_timer = 0
+
+    # ❗️ [추가] 쿨타임 감소
+    if collision_cooldown > 0:
+        collision_cooldown -= dt
 
     # 캐릭터 업데이트
     p1.update(dt)
@@ -158,7 +164,8 @@ def update(dt):
     effects = [e for e in effects if not e.finished]
 
     # --- 충돌 판정 (데미지 & 이펙트) ---
-    if check_collision(p1, p2):
+    # ❗️ 쿨타임(collision_cooldown)이 0 이하일 때만 데미지를 줍니다.
+    if check_collision(p1, p2) and collision_cooldown <= 0:
         collision_happened = False
 
         # 충돌 위치 계산 (두 캐릭터의 중간)
@@ -175,12 +182,16 @@ def update(dt):
             collision_happened = True
             print(f"P2 HITS! P1 HP: {p1.hp}")
 
-        # 충돌 시 이펙트 생성
+        # 충돌 시 이펙트 생성 및 쿨타임 설정
         if collision_happened:
             new_effect = Explosion(hit_x, hit_y)
             effects.append(new_effect)
 
-    # --- 충돌 판정 (밀어내기) ---
+            # ❗️ [추가] 한 번 때리면 0.5초 동안 타격 판정 중지
+            collision_cooldown = 0.05
+
+            # --- 충돌 판정 (밀어내기) ---
+    # ❗️ 밀어내기는 쿨타임과 상관없이 항상 작동해야 통과하지 못합니다.
     if check_collision(p1, p2):
         l1, b1, r1, t1 = p1.get_hitbox()
         l2, b2, r2, t2 = p2.get_hitbox()
