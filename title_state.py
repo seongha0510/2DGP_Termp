@@ -2,7 +2,7 @@
 
 from pico2d import *
 import framework
-import play_state
+import character_select_state
 from constants import *  # ❗️ [추가] 상수를 사용하기 위해 꼭 필요합니다!
 
 image = None
@@ -30,7 +30,7 @@ def handle_event(e):
             framework.quit()
         else:
             # 아무 키나 누르면 게임 화면으로 넘어감
-            framework.change_state(play_state)
+            framework.change_state(character_select_state)
 
 
 def update(dt):
