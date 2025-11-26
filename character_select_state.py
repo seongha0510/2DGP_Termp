@@ -26,10 +26,9 @@ def enter():
     frame2 = load_image('select2.png')
 
     # 캐릭터 이미지를 리스트에 순서대로 담습니다.
-    # 나중에 캐릭터가 더 추가되면 여기에 append만 하면 됩니다.
     char_images = []
-    char_images.append(load_image('selectcharacter1.png'))  # 인덱스 0
-    char_images.append(load_image('selectcharacter2.png'))  # 인덱스 1
+    char_images.append(load_image('selectcharacter1.png'))  # 인덱스 0: 노란 머리
+    char_images.append(load_image('selectcharacter2.png'))  # 인덱스 1: 빨간 머리
 
     font = load_font('VITRO_CORE_TTF.ttf', 30)
 
@@ -61,10 +60,8 @@ def handle_event(e):
 
         # --- 1P 선택 로직 (A, D) ---
         elif e.key == SDLK_a:
-            # 번호를 하나 줄임. % 연산자를 써서 0보다 작아지면 마지막 번호로 돌아감
             p1_select = (p1_select - 1) % len(char_images)
         elif e.key == SDLK_d:
-            # 번호를 하나 늘림.
             p1_select = (p1_select + 1) % len(char_images)
 
         # --- 2P 선택 로직 (좌, 우) ---
@@ -73,11 +70,13 @@ def handle_event(e):
         elif e.key == SDLK_RIGHT:
             p2_select = (p2_select + 1) % len(char_images)
 
-        # --- 게임 시작 ---
+        # --- 게임 시작 (스페이스바) ---
         elif e.key == SDLK_SPACE:
-            # ❗️ 여기서 나중에 play_state로 선택 정보를 넘겨줄 예정입니다.
-            # play_state.p1_choice = p1_select
-            # play_state.p2_choice = p2_select
+            # 선택한 캐릭터 정보를 play_state로 전달
+            play_state.p1_choice = p1_select
+            play_state.p2_choice = p2_select
+
+            # 게임 화면으로 전환
             framework.change_state(play_state)
 
 
@@ -91,7 +90,7 @@ def draw():
     # 1. 배경
     background.draw(CANVAS_W // 2, CANVAS_H // 2, CANVAS_W, CANVAS_H)
 
-    # 좌표 설정
+    # 좌표 및 크기 설정
     p1_x = 250
     p2_x = 550
     center_y = 300
@@ -102,25 +101,34 @@ def draw():
     frame1.draw(p1_x, center_y, box_size, box_size)
     frame2.draw(p2_x, center_y, box_size, box_size)
 
-    # 3. 캐릭터 그리기 (중요!)
-    if p1_select == 0:  # 노란 머리(character1) -> 왼쪽을 보고 있음 -> 뒤집어야 함('h')
+    # 3. 캐릭터 그리기 (좌우 반전 로직 적용)
+
+    # [1P] 왼쪽 위치
+    if p1_select == 0:
+        # 0번(노랑): 그대로
         char_images[0].draw(p1_x, center_y, char_size, char_size)
-    else:  # 빨간 머리(character2) -> 오른쪽을 보고 있음 -> 그대로 그림
+    else:
+        # 1번(빨강): 뒤집기('h')
         char_images[1].composite_draw(0, 'h', p1_x, center_y, char_size, char_size)
 
-        # 2P: 왼쪽을 보도록 그림
-    if p2_select == 0:  # 노란 머리 -> 왼쪽을 보고 있음 -> 그대로 그림
+    # [2P] 오른쪽 위치
+    if p2_select == 0:
+        # 0번(노랑): 뒤집기('h')
         char_images[0].composite_draw(0, 'h', p2_x, center_y, char_size, char_size)
-    else:  # 빨간 머리 -> 오른쪽을 보고 있음 -> 뒤집어야 함('h')
+    else:
+        # 1번(빨강): 그대로
         char_images[1].draw(p2_x, center_y, char_size, char_size)
 
     # 4. 텍스트 표시
+    # "1P", "2P" 라벨
     font.draw(p1_x - 20, center_y + 130, "1P", (255, 255, 255))
     font.draw(p2_x - 20, center_y + 130, "2P", (255, 255, 255))
 
+    # 조작 설명
     info_text = "1P [ A / D ]    SELECT    [ ◀ / ▶ ] 2P"
     font.draw(CANVAS_W // 2 - 290, 100, info_text, (255, 255, 255))
 
+    # 시작 문구
     start_text = "- PRESS SPACE TO START -"
     font.draw(CANVAS_W // 2 - 190, 60, start_text, (255, 255, 0))
 
