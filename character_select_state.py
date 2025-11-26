@@ -103,9 +103,16 @@ def draw():
     frame2.draw(p2_x, center_y, box_size, box_size)
 
     # 3. 캐릭터 그리기 (중요!)
-    # 현재 선택된 번호(p1_select)에 해당하는 이미지를 가져와서 그립니다.
-    char_images[p1_select].draw(p1_x, center_y, char_size, char_size)
-    char_images[p2_select].draw(p2_x, center_y, char_size, char_size)
+    if p1_select == 0:  # 노란 머리(character1) -> 왼쪽을 보고 있음 -> 뒤집어야 함('h')
+        char_images[0].draw(p1_x, center_y, char_size, char_size)
+    else:  # 빨간 머리(character2) -> 오른쪽을 보고 있음 -> 그대로 그림
+        char_images[1].composite_draw(0, 'h', p1_x, center_y, char_size, char_size)
+
+        # 2P: 왼쪽을 보도록 그림
+    if p2_select == 0:  # 노란 머리 -> 왼쪽을 보고 있음 -> 그대로 그림
+        char_images[0].composite_draw(0, 'h', p2_x, center_y, char_size, char_size)
+    else:  # 빨간 머리 -> 오른쪽을 보고 있음 -> 뒤집어야 함('h')
+        char_images[1].draw(p2_x, center_y, char_size, char_size)
 
     # 4. 텍스트 표시
     font.draw(p1_x - 20, center_y + 130, "1P", (255, 255, 255))
