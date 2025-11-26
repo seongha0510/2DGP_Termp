@@ -81,7 +81,20 @@ def draw():
     font.draw(p1_x - 15, center_y + 130, "1P", (255, 255, 255))
     font.draw(p2_x - 15, center_y + 130, "2P", (255, 255, 255))
 
-    # 4. 안내 문구
-    font.draw(CANVAS_W // 2 - 120, 100, "PRESS SPACE TO START", (255, 255, 255))
+    # 4. 안내 문구-
+
+    # 1. 캐릭터 선택 조작 설명 (흰색, 조금 위쪽에 배치)
+    # ◀, ▶ 특수문자를 사용해 직관적으로 표현합니다.
+    info_text = "1P [ A / D ]    SELECT    [ ◀ / ▶ ] 2P"
+
+    # 글자가 좀 기니까 중앙 정렬을 위해 x좌표를 넉넉히 뺍니다.
+    font.draw(CANVAS_W // 2 - 250, 100, info_text, (255, 255, 255))
+
+    # 2. 게임 시작 키 설명 (노란색, 조금 더 아래에 배치)
+    # 폰트를 하나 더 로드해서 작게 쓰면 좋지만, 일단 같은 폰트로 색깔만 다르게 해서 아래에 둡니다.
+    start_text = "- PRESS SPACE TO START -"
+    font.draw(CANVAS_W // 2 - 185, 60, start_text, (255, 255, 0))  # 노란색으로 강조
+
+    update_canvas()
 
     update_canvas()

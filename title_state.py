@@ -46,7 +46,7 @@ def draw():
 
     # 폰트 너비/높이 계산이 안 될 경우를 대비해 try-except나 고정값 사용 가능하지만,
     # 일단 기본 로직대로 진행합니다.
-    text_x = CANVAS_W // 2 - 150  # 대략적인 중앙 정렬
+    text_x = CANVAS_W // 2 - 185  # 대략적인 중앙 정렬
     text_y = 100  # 화면 하단부
 
     font.draw(text_x, text_y, text, (255, 255, 255))
