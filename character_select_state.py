@@ -78,6 +78,9 @@ def draw():
     char1.draw(p1_x, center_y, char_size, char_size)
     char2.draw(p2_x, center_y, char_size, char_size)
 
+    font.draw(p1_x - 15, center_y + 130, "1P", (255, 255, 255))
+    font.draw(p2_x - 15, center_y + 130, "2P", (255, 255, 255))
+
     # 4. 안내 문구
     font.draw(CANVAS_W // 2 - 120, 100, "PRESS SPACE TO START", (255, 255, 255))
 
