@@ -50,6 +50,8 @@ class Character:
 
     def update(self, dt):
         dx = 0
+
+        # 1. 바닥에 있을 때 (걷기)
         if not self.is_jumping:
             if self.move_left:
                 dx -= SPEED * dt
@@ -59,11 +61,23 @@ class Character:
                 self.is_walking = True
             else:
                 self.is_walking = False
+
+        # 2. 공중에 있을 때 (점프/다이브킥)
         else:
-            if self.move_left: dx -= SPEED * dt
-            if self.move_right: dx += SPEED * dt
+            # 기본 이동 속도
+            current_speed = SPEED
+
+            # ❗️ [수정] 다이브킥 중이라면 이동 속도를 절반으로 줄임
+            if self.is_dive_kicking:
+                current_speed = SPEED / 2
+
+            # 계산된 속도(current_speed)를 적용
+            if self.move_left: dx -= current_speed * dt
+            if self.move_right: dx += current_speed * dt
+
         self.x += dx
 
+        # 수직 이동 (점프/다이브킥 낙하)
         if self.is_jumping:
             if self.is_dive_kicking:
                 self.jump_velocity = -self.divekick_speed
@@ -92,7 +106,7 @@ class Character:
             if num_walk_frames > 0:
                 self.walk_frame = (self.walk_frame + walk_fps * dt) % num_walk_frames
 
-    # --- ❗️ 절대 크기로 고정된 히트박스 ---
+    # 절대 크기로 고정된 히트박스
     def get_hitbox(self):
         # 1. 기본 히트박스 크기 (평소 크기)
         FIXED_W = 80
@@ -103,14 +117,10 @@ class Character:
 
         # 2. 다이브킥 상태일 때 크기 조절
         if self.is_dive_kicking:
-            # ❗️ [수정] 가로(너비)를 1.5배, 2.0배 등으로 늘려주세요.
-            # (예: 1.8배로 가로만 길어지게 설정)
+            # 가로(너비)를 1.8배로 늘림
             draw_w = int(draw_w * 1.8)
 
-            # 세로(높이)는 그대로 두거나, 필요하면 조절하세요.
-            # draw_h = int(draw_h * 1.0)
-
-        # 3. 좌표 계산 (수정 X)
+        # 3. 좌표 계산
         left = self.x - draw_w / 2
         bottom = self.y - draw_h / 2
         right = self.x + draw_w / 2
@@ -121,7 +131,6 @@ class Character:
     def draw(self):
         current_sheet = None
         frame_info = None
-        # draw 함수는 그림을 그려야 하므로 스프라이트 정보가 필요합니다 (히트박스와 별개)
         current_sprite_w, current_sprite_h = 0, 0
         draw_x = int(self.x)
         draw_y = int(self.y)
