@@ -237,4 +237,4 @@ class Character:
             self.is_dive_kicking = False
             self.jump_velocity = 0.0
             # 바닥으로 위치 보정 (공중에서 죽었을 경우)
-            self.y = CHARACTER_GROUND_Y
+            self.y = CHARACTER_GROUND_Y -100
