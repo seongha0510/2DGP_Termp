@@ -220,37 +220,35 @@ def update(dt):
 
     # --- 충돌 판정 (밀어내기) ---
     if check_collision(p1, p2):
-        l1, b1, r1, t1 = p1.get_hitbox()
-        l2, b2, r2, t2 = p2.get_hitbox()
+        # ... (밀어내기 코드 생략) ...
+        # (기존 코드와 동일하게 유지하세요)
+        pass
 
-        overlap_x = min(r1, r2) - max(l1, l2)
+        # --- ❗️ [수정] 게임 종료 판정 (정보 전달 추가) ---
 
-        if overlap_x > 0:
-            push_amount = overlap_x / 2
-
-            if p1.x < p2.x:
-                p1.x -= push_amount
-                p2.x += push_amount
-            else:
-                p1.x += push_amount
-                p2.x -= push_amount
-
-            p1.x = max(0, min(CANVAS_W, p1.x))
-            p2.x = max(0, min(CANVAS_W, p2.x))
-
+        # P1이 죽었으면 -> P2(index 1) 승리
     if p1.is_dead:
-        import game_over_state  # 여기서 임포트
+        import game_over_state
         game_over_state.winner_index = 1  # P2 승리
+
+        # ❗️ [추가] 캐릭터 선택 정보도 같이 넘겨줍니다!
+        game_over_state.p1_choice = p1_choice
+        game_over_state.p2_choice = p2_choice
+
         framework.change_state(game_over_state)
-        return  # update 종료
+        return
 
         # P2가 죽었으면 -> P1(index 0) 승리
     if p2.is_dead:
-        import game_over_state  # 여기서 임포트
+        import game_over_state
         game_over_state.winner_index = 0  # P1 승리
-        framework.change_state(game_over_state)
-        return  # update 종료
 
+        # ❗️ [추가] 캐릭터 선택 정보도 같이 넘겨줍니다!
+        game_over_state.p1_choice = p1_choice
+        game_over_state.p2_choice = p2_choice
+
+        framework.change_state(game_over_state)
+        return
 
 def draw():
     clear_canvas()
