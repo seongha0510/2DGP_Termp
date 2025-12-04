@@ -36,8 +36,6 @@ def check_collision(a, b):
     return True
 
 
-# ❗️ [추가] 캐릭터 데이터를 가져오는 도우미 함수
-# index: 0이면 노란머리(기존 P1데이터), 1이면 빨간머리(기존 P2데이터)를 반환
 def get_character_data(index):
     assets = {}
     frames = {}
@@ -48,19 +46,23 @@ def get_character_data(index):
             'stand': load_image('character1.png'),
             'jump': load_image('character1_jump.png'),
             'divekick': load_image('character1_divekick.png'),
-            'walk': load_image('character1_walk.png')
+            'walk': load_image('character1_walk.png'),
+            'dead': load_image('character_1_dead.png') # ❗️ [추가] 죽음 이미지
         }
         frames = {
-            'jump_rise': P1_JUMP_RISE,  # constants.py의 P1은 '노란머리' 데이터
+            'jump_rise': P1_JUMP_RISE,
             'jump_fall': P1_JUMP_FALL,
             'walk': P1_WALK_FRAMES,
-            'walk_fps': P1_WALK_FPS
+            'walk_fps': P1_WALK_FPS,
+            'dead': [P1_DEAD_FRAME], # ❗️ [추가] 리스트 형태 ([...])로 넣어야 character.py와 호환됨
+            'dead_fps': 1 # 1프레임이라 속도는 의미 없음
         }
         rules = {
             'padding': P1_WALK_PADDING,
             'dive_speed': 700.0,
             'dive_scale': 1.0,
-            'jump_flip': False
+            'jump_flip': False,
+            'hitbox_scale': 2.0
         }
 
     else:  # 🔴 빨간 머리 (Kick)
@@ -68,23 +70,26 @@ def get_character_data(index):
             'stand': load_image('character_2.png'),
             'jump': load_image('character2_jump.png'),
             'divekick': load_image('character2_divekick.png'),
-            'walk': load_image('character_2_walk.png')
+            'walk': load_image('character_2_walk.png'),
+            'dead': load_image('character_2_dead.png') # ❗️ [추가] 죽음 이미지
         }
         frames = {
-            'jump_rise': P2_JUMP_RISE,  # constants.py의 P2는 '빨간머리' 데이터
+            'jump_rise': P2_JUMP_RISE,
             'jump_fall': P2_JUMP_FALL,
             'walk': P2_WALK_FRAMES,
-            'walk_fps': P2_WALK_FPS
+            'walk_fps': P2_WALK_FPS,
+            'dead': [P2_DEAD_FRAME], # ❗️ [추가]
+            'dead_fps': 1
         }
         rules = {
             'padding': P2_WALK_PADDING,
             'dive_speed': 700.0,
             'dive_scale': 1.15,
-            'jump_flip': True
+            'jump_flip': True,
+            'hitbox_scale': 1.8
         }
 
     return assets, frames, rules
-
 
 # --- framework.py가 호출할 함수들 ---
 

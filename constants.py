@@ -27,3 +27,10 @@ P2_JUMP_FALL = (114, 0, 57, 150)
 P2_WALK_FRAMES = [(i * 66, 0, 66, 130) for i in range(8)]
 P2_WALK_FPS = 10
 P2_WALK_PADDING = 0
+
+# P1 죽음 프레임 (character_1_dead.png)
+# 이미지 전체를 하나의 프레임으로 사용
+P1_DEAD_FRAME = (0, 0, 150, 43) # (left, bottom, width, height) - 대략적인 크기
+
+# P2 죽음 프레임 (character_2_dead.png)
+P2_DEAD_FRAME = (0, 0, 153, 44) # (left, bottom, width, height) - 대략적인 크기
