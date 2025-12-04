@@ -99,7 +99,7 @@ def draw():
 
         # 4. 텍스트 그리기
         win_text = f"PLAYER {winner_index + 1} WIN!!!"
-        text_width = len(win_text) * 40
+        text_width = len(win_text) * 27
 
         # 프레임 상단부에 텍스트 배치
         font_win.draw(center_x - text_width // 2, center_y + 180, win_text, (255, 255, 0))  # 노란색
@@ -109,6 +109,6 @@ def draw():
         font_win.draw(center_x - 170, center_y, "DRAW GAME", (255, 255, 255))
 
     # 5. 안내 문구 (프레임 하단)
-    font_info.draw(center_x - 150, center_y - 200, "PRESS ANY KEY", (0, 0, 0))
+    font_info.draw(center_x - 130, center_y - 200, "PRESS ANY KEY", (0, 0, 0))
 
     update_canvas()
