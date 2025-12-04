@@ -19,8 +19,7 @@ running = True
 effects = []  # 이펙트 리스트
 collision_cooldown = 0.0  # 타격 쿨타임 변수
 
-# ❗️ [추가] 선택된 캐릭터 번호를 받을 변수 (기본값: 0, 1)
-# char_select_state에서 이 변수들에 값을 넣어줍니다.
+# 선택된 캐릭터 번호를 받을 변수 (기본값: 0, 1)
 p1_choice = 0
 p2_choice = 1
 
@@ -36,6 +35,7 @@ def check_collision(a, b):
     return True
 
 
+# 캐릭터 데이터를 가져오는 도우미 함수
 def get_character_data(index):
     assets = {}
     frames = {}
@@ -47,15 +47,15 @@ def get_character_data(index):
             'jump': load_image('character1_jump.png'),
             'divekick': load_image('character1_divekick.png'),
             'walk': load_image('character1_walk.png'),
-            'dead': load_image('character_1_dead.png') # ❗️ [추가] 죽음 이미지
+            'dead': load_image('character_1_dead.png')
         }
         frames = {
             'jump_rise': P1_JUMP_RISE,
             'jump_fall': P1_JUMP_FALL,
             'walk': P1_WALK_FRAMES,
             'walk_fps': P1_WALK_FPS,
-            'dead': [P1_DEAD_FRAME], # ❗️ [추가] 리스트 형태 ([...])로 넣어야 character.py와 호환됨
-            'dead_fps': 1 # 1프레임이라 속도는 의미 없음
+            'dead': [P1_DEAD_FRAME],
+            'dead_fps': 1
         }
         rules = {
             'padding': P1_WALK_PADDING,
@@ -71,14 +71,14 @@ def get_character_data(index):
             'jump': load_image('character2_jump.png'),
             'divekick': load_image('character2_divekick.png'),
             'walk': load_image('character_2_walk.png'),
-            'dead': load_image('character_2_dead.png') # ❗️ [추가] 죽음 이미지
+            'dead': load_image('character_2_dead.png')
         }
         frames = {
             'jump_rise': P2_JUMP_RISE,
             'jump_fall': P2_JUMP_FALL,
             'walk': P2_WALK_FRAMES,
             'walk_fps': P2_WALK_FPS,
-            'dead': [P2_DEAD_FRAME], # ❗️ [추가]
+            'dead': [P2_DEAD_FRAME],
             'dead_fps': 1
         }
         rules = {
@@ -90,6 +90,7 @@ def get_character_data(index):
         }
 
     return assets, frames, rules
+
 
 # --- framework.py가 호출할 함수들 ---
 
@@ -105,7 +106,7 @@ def enter():
     effects = []
     collision_cooldown = 0.0
 
-    # --- ❗️ [수정] P1 생성 (선택된 캐릭터 로드) ---
+    # --- P1 생성 (선택된 캐릭터 로드) ---
     assets1, frames1, rules1 = get_character_data(p1_choice)
     p1_keys = {'left': SDLK_a, 'right': SDLK_d, 'up': SDLK_w, 'down': SDLK_s}
 
@@ -118,7 +119,7 @@ def enter():
         rules=rules1
     )
 
-    # --- ❗️ [수정] P2 생성 (선택된 캐릭터 로드) ---
+    # --- P2 생성 (선택된 캐릭터 로드) ---
     assets2, frames2, rules2 = get_character_data(p2_choice)
     p2_keys = {'left': SDLK_LEFT, 'right': SDLK_RIGHT, 'up': SDLK_UP, 'down': SDLK_DOWN}
 
@@ -162,27 +163,23 @@ def handle_event(e):
         p2.handle_event(e)
 
 
-# play_state.py - update 함수 수정
-
 def update(dt):
     global game_timer, effects, collision_cooldown
 
-    # --- ❗️ [수정] 타이머 업데이트 및 타임오버 판정 ---
+    # --- 타이머 업데이트 및 타임오버 판정 ---
     if game_timer > 0:
         game_timer -= dt
     else:
         game_timer = 0
 
-        # ❗️ 타임오버! 아직 둘 다 살아있다면 HP 판정 시작
+        # 타임오버! 아직 둘 다 살아있다면 HP 판정 시작
         if not p1.is_dead and not p2.is_dead:
             if p1.hp < p2.hp:
-                # P1 체력이 더 적음 -> P1 즉사 (남은 체력만큼 데미지)
-                p1.take_damage(p1.hp)
+                p1.take_damage(p1.hp)  # P1 즉사
             elif p2.hp < p1.hp:
-                # P2 체력이 더 적음 -> P2 즉사
-                p2.take_damage(p2.hp)
+                p2.take_damage(p2.hp)  # P2 즉사
             else:
-                # (옵션) 체력이 같으면 무승부 -> 둘 다 쓰러지게 처리
+                # 무승부 시 둘 다 쓰러짐
                 p1.take_damage(p1.hp)
                 p2.take_damage(p2.hp)
 
@@ -194,32 +191,34 @@ def update(dt):
     p1.update(dt)
     p2.update(dt)
 
-    # 이펙트 업데이트
+    # 이펙트 업데이트 및 완료된 이펙트 제거
     for effect in effects:
         effect.update(dt)
     effects = [e for e in effects if not e.finished]
 
-    # 충돌 판정 (데미지 & 이펙트)
+    # --- 충돌 판정 (데미지 & 이펙트) ---
     if check_collision(p1, p2) and collision_cooldown <= 0:
         collision_happened = False
         hit_x = (p1.x + p2.x) / 2
         hit_y = (p1.y + p2.y) / 2
 
-        # ❗️ [중요] 이미 죽은 사람은 공격할 수 없음
+        # 이미 죽은 사람은 공격할 수 없음
         if not p1.is_dead and p1.is_dive_kicking:
             p2.take_damage(4)
             collision_happened = True
+            print(f"P1 HITS! P2 HP: {p2.hp}")
 
         if not p2.is_dead and p2.is_dive_kicking:
             p1.take_damage(4)
             collision_happened = True
+            print(f"P2 HITS! P1 HP: {p1.hp}")
 
         if collision_happened:
             new_effect = Explosion(hit_x, hit_y)
             effects.append(new_effect)
             collision_cooldown = 0.05
 
-    # 충돌 판정 (밀어내기)
+    # --- 충돌 판정 (밀어내기) ---
     if check_collision(p1, p2):
         l1, b1, r1, t1 = p1.get_hitbox()
         l2, b2, r2, t2 = p2.get_hitbox()
@@ -238,6 +237,7 @@ def update(dt):
 
             p1.x = max(0, min(CANVAS_W, p1.x))
             p2.x = max(0, min(CANVAS_W, p2.x))
+
 
 def draw():
     clear_canvas()
@@ -262,6 +262,13 @@ def draw():
 
     text_x = hp_bar.x - 21
     text_y = hp_bar.y - 2
-    font.draw(text_x, text_y, timer_text, (255, 255, 255))
+
+    # ❗️ [수정] 10초 이하일 때 빨간색으로 변경
+    if game_timer <= 10.0:
+        timer_color = (255, 0, 0)  # 빨간색
+    else:
+        timer_color = (255, 255, 255)  # 흰색
+
+    font.draw(text_x, text_y, timer_text, timer_color)  # ❗️ timer_color 적용
 
     update_canvas()
