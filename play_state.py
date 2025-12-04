@@ -162,14 +162,29 @@ def handle_event(e):
         p2.handle_event(e)
 
 
+# play_state.py - update 함수 수정
+
 def update(dt):
     global game_timer, effects, collision_cooldown
 
-    # 타이머 업데이트
+    # --- ❗️ [수정] 타이머 업데이트 및 타임오버 판정 ---
     if game_timer > 0:
         game_timer -= dt
     else:
         game_timer = 0
+
+        # ❗️ 타임오버! 아직 둘 다 살아있다면 HP 판정 시작
+        if not p1.is_dead and not p2.is_dead:
+            if p1.hp < p2.hp:
+                # P1 체력이 더 적음 -> P1 즉사 (남은 체력만큼 데미지)
+                p1.take_damage(p1.hp)
+            elif p2.hp < p1.hp:
+                # P2 체력이 더 적음 -> P2 즉사
+                p2.take_damage(p2.hp)
+            else:
+                # (옵션) 체력이 같으면 무승부 -> 둘 다 쓰러지게 처리
+                p1.take_damage(p1.hp)
+                p2.take_damage(p2.hp)
 
     # 쿨타임 감소
     if collision_cooldown > 0:
@@ -179,39 +194,32 @@ def update(dt):
     p1.update(dt)
     p2.update(dt)
 
-    # 이펙트 업데이트 및 완료된 이펙트 제거
+    # 이펙트 업데이트
     for effect in effects:
         effect.update(dt)
     effects = [e for e in effects if not e.finished]
 
-    # --- 충돌 판정 (데미지 & 이펙트) ---
-    # ❗️ 쿨타임(collision_cooldown)이 0 이하일 때만 데미지를 줍니다.
+    # 충돌 판정 (데미지 & 이펙트)
     if check_collision(p1, p2) and collision_cooldown <= 0:
         collision_happened = False
-
-        # 충돌 위치 계산 (두 캐릭터의 중간)
         hit_x = (p1.x + p2.x) / 2
         hit_y = (p1.y + p2.y) / 2
 
-        if p1.is_dive_kicking:
-            p2.take_damage(4)  # 기존 설정 유지 (데미지 4)
+        # ❗️ [중요] 이미 죽은 사람은 공격할 수 없음
+        if not p1.is_dead and p1.is_dive_kicking:
+            p2.take_damage(4)
             collision_happened = True
-            print(f"P1 HITS! P2 HP: {p2.hp}")
 
-        if p2.is_dive_kicking:
-            p1.take_damage(4)  # 기존 설정 유지 (데미지 4)
+        if not p2.is_dead and p2.is_dive_kicking:
+            p1.take_damage(4)
             collision_happened = True
-            print(f"P2 HITS! P1 HP: {p1.hp}")
 
-        # 충돌 시 이펙트 생성 및 쿨타임 설정
         if collision_happened:
             new_effect = Explosion(hit_x, hit_y)
             effects.append(new_effect)
-
-            # ❗️ 기존 설정 유지 (쿨타임 0.05)
             collision_cooldown = 0.05
 
-    # --- 충돌 판정 (밀어내기) ---
+    # 충돌 판정 (밀어내기)
     if check_collision(p1, p2):
         l1, b1, r1, t1 = p1.get_hitbox()
         l2, b2, r2, t2 = p2.get_hitbox()
@@ -230,7 +238,6 @@ def update(dt):
 
             p1.x = max(0, min(CANVAS_W, p1.x))
             p2.x = max(0, min(CANVAS_W, p2.x))
-
 
 def draw():
     clear_canvas()
