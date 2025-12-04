@@ -92,7 +92,7 @@ def draw():
 
         # 4. 텍스트 그리기
         win_text = f"PLAYER {winner_index + 1} WIN!!!"
-        text_width = len(win_text) * 25
+        text_width = len(win_text) * 28
 
         # 프레임 상단부에 텍스트 배치
         font_win.draw(center_x - text_width // 2, center_y + 180, win_text, (255, 255, 0))  # 노란색
