@@ -238,6 +238,19 @@ def update(dt):
             p1.x = max(0, min(CANVAS_W, p1.x))
             p2.x = max(0, min(CANVAS_W, p2.x))
 
+    if p1.is_dead:
+        import game_over_state  # 여기서 임포트
+        game_over_state.winner_index = 1  # P2 승리
+        framework.change_state(game_over_state)
+        return  # update 종료
+
+        # P2가 죽었으면 -> P1(index 0) 승리
+    if p2.is_dead:
+        import game_over_state  # 여기서 임포트
+        game_over_state.winner_index = 0  # P1 승리
+        framework.change_state(game_over_state)
+        return  # update 종료
+
 
 def draw():
     clear_canvas()
