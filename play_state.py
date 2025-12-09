@@ -20,6 +20,7 @@ effects = []  # 이펙트 리스트
 collision_cooldown = 0.0  # 타격 쿨타임 변수
 
 # 선택된 캐릭터 번호를 받을 변수 (기본값: 0, 1)
+# char_select_state에서 이 변수들에 값을 넣어줍니다.
 p1_choice = 0
 p2_choice = 1
 
@@ -35,7 +36,7 @@ def check_collision(a, b):
     return True
 
 
-# 캐릭터 데이터를 가져오는 도우미 함수
+# ❗️ [누락되었던 함수] 캐릭터 데이터를 가져오는 도우미 함수
 def get_character_data(index):
     assets = {}
     frames = {}
@@ -50,7 +51,7 @@ def get_character_data(index):
             'dead': load_image('character_1_dead.png')
         }
         frames = {
-            'jump_rise': P1_JUMP_RISE,
+            'jump_rise': P1_JUMP_RISE,  # constants.py의 P1은 '노란머리' 데이터
             'jump_fall': P1_JUMP_FALL,
             'walk': P1_WALK_FRAMES,
             'walk_fps': P1_WALK_FPS,
@@ -74,7 +75,7 @@ def get_character_data(index):
             'dead': load_image('character_2_dead.png')
         }
         frames = {
-            'jump_rise': P2_JUMP_RISE,
+            'jump_rise': P2_JUMP_RISE,  # constants.py의 P2는 '빨간머리' 데이터
             'jump_fall': P2_JUMP_FALL,
             'walk': P2_WALK_FRAMES,
             'walk_fps': P2_WALK_FPS,
@@ -95,11 +96,15 @@ def get_character_data(index):
 # --- framework.py가 호출할 함수들 ---
 
 def enter():
-    global background, p1, p2, hp_bar, font, game_timer, effects, collision_cooldown
+    global background, p1, p2, hp_bar, font, game_timer, effects, collision_cooldown, hit_sound
     # p1_choice, p2_choice는 char_select_state에서 값을 넣어줍니다.
 
     background = load_image('Stage.png')
     font = load_font('VITRO_CORE_TTF.ttf', 30)
+
+    # 타격음 로드
+    hit_sound = load_wav('bomb.mp3')
+    hit_sound.set_volume(50)
 
     # 타이머, 이펙트 리스트, 쿨타임 초기화
     game_timer = 60.0
@@ -133,24 +138,24 @@ def enter():
     )
 
     # HP 바 생성
-    BAR_W, BAR_H = 600, 50
+    BAR_W, BAR_H = 760, 60
     BAR_Y = CANVAS_H - 70
     hp_bar = HpBar(
         x=CANVAS_W // 2,
         y=BAR_Y,
-        width=BAR_W,
-        height=BAR_H
+        width=BAR_W
     )
 
 
 def exit():
-    global background, p1, p2, hp_bar, font, effects
+    global background, p1, p2, hp_bar, font, effects, hit_sound
     del background
     del p1
     del p2
     del hp_bar
     del font
     del effects
+    del hit_sound
 
 
 def handle_event(e):
@@ -166,7 +171,7 @@ def handle_event(e):
 def update(dt):
     global game_timer, effects, collision_cooldown
 
-    # 1. 타이머 업데이트
+    # 타이머 업데이트
     if game_timer > 0:
         game_timer -= dt
     else:
@@ -182,50 +187,52 @@ def update(dt):
                 p1.take_damage(p1.hp)
                 p2.take_damage(p2.hp)
 
-    # 2. 쿨타임 감소
+    # 쿨타임 감소
     if collision_cooldown > 0:
         collision_cooldown -= dt
 
-    # 3. 캐릭터 및 이펙트 업데이트
+    # 캐릭터 업데이트
     p1.update(dt)
     p2.update(dt)
 
+    # 이펙트 업데이트 및 완료된 이펙트 제거
     for effect in effects:
         effect.update(dt)
     effects = [e for e in effects if not e.finished]
 
-    # --- 4. 충돌 판정 (데미지 & 이펙트) ---
+    # --- 충돌 판정 (데미지 & 이펙트 & 사운드) ---
     if check_collision(p1, p2) and collision_cooldown <= 0:
         collision_happened = False
         hit_x = (p1.x + p2.x) / 2
         hit_y = (p1.y + p2.y) / 2
 
-        # 죽지 않은 상태에서 공격했을 때만 데미지
+        # 이미 죽은 사람은 공격할 수 없음
         if not p1.is_dead and p1.is_dive_kicking:
             p2.take_damage(4)
             collision_happened = True
+            print(f"P1 HITS! P2 HP: {p2.hp}")
 
         if not p2.is_dead and p2.is_dive_kicking:
             p1.take_damage(4)
             collision_happened = True
+            print(f"P2 HITS! P1 HP: {p1.hp}")
 
         if collision_happened:
             new_effect = Explosion(hit_x, hit_y)
             effects.append(new_effect)
+            hit_sound.play()  # 타격음 재생
             collision_cooldown = 0.05
 
-    # --- ❗️ 5. 충돌 판정 (밀어내기 - 다시 추가됨!) ---
+    # --- 충돌 판정 (밀어내기) ---
     if check_collision(p1, p2):
         l1, b1, r1, t1 = p1.get_hitbox()
         l2, b2, r2, t2 = p2.get_hitbox()
 
-        # 겹친 너비 계산
         overlap_x = min(r1, r2) - max(l1, l2)
 
         if overlap_x > 0:
             push_amount = overlap_x / 2
 
-            # 서로 반대 방향으로 밀어냄
             if p1.x < p2.x:
                 p1.x -= push_amount
                 p2.x += push_amount
@@ -233,11 +240,10 @@ def update(dt):
                 p1.x += push_amount
                 p2.x -= push_amount
 
-            # 화면 밖으로 나가지 않게 고정
             p1.x = max(0, min(CANVAS_W, p1.x))
             p2.x = max(0, min(CANVAS_W, p2.x))
 
-    # --- 6. 게임 종료 판정 (승리 포즈 연동) ---
+    # --- 게임 종료 판정 (승리 포즈 연동) ---
     if p1.is_dead:
         import game_over_state
         game_over_state.winner_index = 1  # P2 승리
@@ -253,6 +259,7 @@ def update(dt):
         game_over_state.p2_choice = p2_choice
         framework.change_state(game_over_state)
         return
+
 
 def draw():
     clear_canvas()
@@ -278,12 +285,12 @@ def draw():
     text_x = hp_bar.x - 21
     text_y = hp_bar.y - 2
 
-    # ❗️ [수정] 10초 이하일 때 빨간색으로 변경
+    # 10초 이하일 때 빨간색으로 변경
     if game_timer <= 10.0:
         timer_color = (255, 0, 0)  # 빨간색
     else:
         timer_color = (255, 255, 255)  # 흰색
 
-    font.draw(text_x, text_y, timer_text, timer_color)  # ❗️ timer_color 적용
+    font.draw(text_x, text_y, timer_text, timer_color)
 
     update_canvas()
