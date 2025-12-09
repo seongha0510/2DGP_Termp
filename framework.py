@@ -1,10 +1,11 @@
-# framework.py (수정된 버전 - open_canvas 추가)
+# framework.py
 
 from pico2d import *
 import time
 
 running = True
 stack = None
+bgm = None  # ❗️ 전역 BGM 변수
 
 
 def change_state(state_module):
@@ -22,10 +23,17 @@ def quit():
 
 
 def run(start_state_module):
-    global running, stack
+    global running, stack, bgm
 
-    # ❗️ [수정] 게임 시작 전에 반드시 캔버스(창)를 먼저 열어야 합니다!
-    open_canvas(800, 600)  # 너비 800, 높이 600으로 창 열기
+    # 1. 초기화 (반드시 캔버스 먼저 열기)
+    open_canvas(800, 600)
+
+    # --- ❗️ [추가] BGM 로드 및 재생 ---
+    # 여기서 한 번만 로드해서 게임 내내 씁니다.
+    bgm = load_music('bgm.mp3')
+    bgm.set_volume(64)
+    bgm.repeat_play()
+    # --------------------------------
 
     running = True
     stack = [start_state_module]
@@ -54,4 +62,6 @@ def run(start_state_module):
         stack[-1].exit()
         stack.pop()
 
+    # 종료 시 BGM 정리
+    del bgm
     close_canvas()
